@@ -1,7 +1,13 @@
 import os
 import uuid
+import perth
 import torchaudio
 from flask import Flask, request, jsonify, send_file, render_template
+
+# PerthImplicitWatermarker is None in some installs — fall back to dummy
+if perth.PerthImplicitWatermarker is None:
+    perth.PerthImplicitWatermarker = perth.DummyWatermarker
+
 from chatterbox.mtl_tts import ChatterboxMultilingualTTS
 
 app = Flask(__name__)
