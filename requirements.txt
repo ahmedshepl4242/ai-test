@@ -1,4 +1,5 @@
-chatterbox-tts
+TTS
 flask
 pydub
 ffmpeg-python
+numpy

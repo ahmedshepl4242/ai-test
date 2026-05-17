@@ -1,14 +1,7 @@
 import os
 import uuid
-import perth
-import torchaudio
 from flask import Flask, request, jsonify, send_file, render_template
-
-# PerthImplicitWatermarker is None in some installs — fall back to dummy
-if perth.PerthImplicitWatermarker is None:
-    perth.PerthImplicitWatermarker = perth.DummyWatermarker
-
-from chatterbox.mtl_tts import ChatterboxMultilingualTTS
+from TTS.api import TTS
 
 app = Flask(__name__)
 
@@ -17,9 +10,9 @@ REFERENCE_AUDIO = os.path.join(BASE_DIR, "reference.wav")
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Load multilingual model once at startup (CPU mode)
-print("Loading Chatterbox Multilingual model (this may take a minute on CPU)...")
-model = ChatterboxMultilingualTTS.from_pretrained(device="cpu")
+# Load XTTS-v2 once at startup
+print("Loading XTTS-v2 model (first run downloads ~2GB)...")
+tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=False)
 print("Model ready.")
 
 
@@ -40,10 +33,14 @@ def synthesize():
         return jsonify({"error": "Reference audio not found. Run prepare_reference.py first."}), 500
 
     try:
-        wav = model.generate(text, audio_prompt_path=REFERENCE_AUDIO, language_id="ar")
         filename = f"{uuid.uuid4().hex}.wav"
         out_path = os.path.join(OUTPUT_DIR, filename)
-        torchaudio.save(out_path, wav, model.sr)
+        tts.tts_to_file(
+            text=text,
+            speaker_wav=REFERENCE_AUDIO,
+            language="ar",
+            file_path=out_path
+        )
         return jsonify({"file": filename})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
