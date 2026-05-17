@@ -6,8 +6,9 @@ from chatterbox.mtl_tts import ChatterboxMultilingualTTS
 
 app = Flask(__name__)
 
-REFERENCE_AUDIO = r"E:\ai-audio\reference.wav"
-OUTPUT_DIR = r"E:\ai-audio\outputs"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+REFERENCE_AUDIO = os.path.join(BASE_DIR, "reference.wav")
+OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Load multilingual model once at startup (CPU mode)

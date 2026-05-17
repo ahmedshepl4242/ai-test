@@ -7,8 +7,9 @@ import subprocess
 import sys
 import os
 
-INPUT = r"E:\ai-audio\audio.mp3"
-OUTPUT = r"E:\ai-audio\reference.wav"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+INPUT = os.path.join(BASE_DIR, "audio.mp3")
+OUTPUT = os.path.join(BASE_DIR, "reference.wav")
 DURATION = 10  # seconds — Chatterbox works best with ~10s
 
 
