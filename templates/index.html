@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arabic Voice Synthesis</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      background: #0f0f14;
+      color: #e8e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: #1a1a24;
+      border: 1px solid #2a2a3a;
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 640px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #a78bfa;
+    }
+
+    p.subtitle {
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 28px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 140px;
+      background: #12121a;
+      border: 1px solid #2a2a3a;
+      border-radius: 10px;
+      color: #e8e8f0;
+      font-size: 1.1rem;
+      padding: 14px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      direction: rtl;
+    }
+
+    textarea:focus {
+      border-color: #7c3aed;
+    }
+
+    button#synthesize-btn {
+      margin-top: 18px;
+      width: 100%;
+      padding: 14px;
+      background: #7c3aed;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+    }
+
+    button#synthesize-btn:hover:not(:disabled) {
+      background: #6d28d9;
+    }
+
+    button#synthesize-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 16px;
+      font-size: 0.9rem;
+      min-height: 22px;
+      color: #888;
+      text-align: center;
+    }
+
+    .status.error { color: #f87171; }
+    .status.working { color: #a78bfa; }
+
+    .audio-wrap {
+      margin-top: 24px;
+      display: none;
+    }
+
+    .audio-wrap label {
+      margin-bottom: 10px;
+      color: #a78bfa;
+    }
+
+    audio {
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .download-btn {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 9px 20px;
+      background: #1e1e2e;
+      border: 1px solid #2a2a3a;
+      border-radius: 8px;
+      color: #a78bfa;
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+
+    .download-btn:hover { background: #2a2a3e; }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(167,139,250,0.3);
+      border-top-color: #a78bfa;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>تركيب الصوت بالعربية</h1>
+    <p class="subtitle">Arabic Voice Synthesis — powered by Chatterbox</p>
+
+    <label for="arabic-text">أدخل النص العربي</label>
+    <textarea id="arabic-text" placeholder="اكتب النص هنا..."></textarea>
+
+    <button id="synthesize-btn" onclick="synthesize()">توليد الصوت</button>
+
+    <div class="status" id="status"></div>
+
+    <div class="audio-wrap" id="audio-wrap">
+      <label>الصوت الناتج</label>
+      <audio id="audio-player" controls></audio>
+      <br />
+      <a id="download-link" class="download-btn" download="output.wav">تحميل الملف</a>
+    </div>
+  </div>
+
+  <script>
+    async function synthesize() {
+      const text = document.getElementById("arabic-text").value.trim();
+      if (!text) {
+        setStatus("الرجاء إدخال نص أولاً.", "error");
+        return;
+      }
+
+      const btn = document.getElementById("synthesize-btn");
+      btn.disabled = true;
+      setStatus('<span class="spinner"></span> جارٍ التوليد، قد يستغرق دقيقة...', "working");
+      document.getElementById("audio-wrap").style.display = "none";
+
+      try {
+        const res = await fetch("/synthesize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          setStatus("خطأ: " + data.error, "error");
+        } else {
+          const url = "/audio/" + data.file;
+          document.getElementById("audio-player").src = url;
+          document.getElementById("download-link").href = url;
+          document.getElementById("audio-wrap").style.display = "block";
+          setStatus("تم التوليد بنجاح.", "");
+        }
+      } catch (e) {
+        setStatus("فشل الاتصال بالخادم.", "error");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function setStatus(msg, cls) {
+      const el = document.getElementById("status");
+      el.innerHTML = msg;
+      el.className = "status " + cls;
+    }
+
+    // Allow Ctrl+Enter to submit
+    document.getElementById("arabic-text").addEventListener("keydown", e => {
+      if (e.ctrlKey && e.key === "Enter") synthesize();
+    });
+  </script>
+</body>
+</html>
