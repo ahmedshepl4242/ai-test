@@ -103,6 +103,7 @@ def main():
 
     best_start = find_best_window(audio, SAMPLE_RATE, WINDOW_SEC)
     extract_clip(best_start, WINDOW_SEC)
+    print(f"Reference duration: {WINDOW_SEC}s")
     print(f"Reference clip saved to: {OUTPUT}")
 
 
